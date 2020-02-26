@@ -30,14 +30,28 @@ tr {
     border-bottom: 1px solid black;
 }
 
-#r2 {
+.correct {
     color: green;
 }
 
-#r3 {
+.wrong {
     color: red;
 }
 
+.ui-autocomplete {
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
 
+.delete {
+    margin-left: 5px;
+}
+
+#delete_button {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
 
 /*your code here*/
