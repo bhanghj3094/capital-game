@@ -126,6 +126,6 @@ $(document).ready(function() { // '$' is the value given for the jQuery library 
 
 // on Button Press => ajax 로 안에 넣을 수 없다. 
 $(document).on("click", ".delete", function() {
-  alert("in the delete!");
+  // alert("in the delete!");
   this.closest("tr").remove();
 });
