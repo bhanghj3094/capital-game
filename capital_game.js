@@ -6,7 +6,11 @@ $.ajax(
   "https://s3.ap-northeast-2.amazonaws.com/ec2-54-144-69-91.compute-1.amazonaws.com/country_capital_pairs_2019.csv"
 )
   .done(response => {
-    let pairs = [];
+    /**
+     * Parse response into javascript array.
+     * The result is stored in windows.pairs variable.
+     */
+    window.pairs = [];
     const data = response.split("\n").slice(1);
     for (let i = 0; i < data.length; i++) {
       const country = data[i].split(",")[0];
@@ -32,13 +36,16 @@ $.ajax(
       });
     }
 
+    /**
+     * Get only capitals array for autocompletion.
+     */
     let current_country_capital_pair = {};
     const capitals = []; // Array for only capitals
-    for (i = 0; i < pairs.length; i++) {
-      capitals.push(pairs[i].capital);
+    for (i = 0; i < window.pairs.length; i++) {
+      capitals.push(window.pairs[i].capital);
     }
 
-    $(document).ready(function() {
+    $(document).ready(function () {
       // '$' is the value given for the jQuery library when it loads up.
       // on Page Load
       current_country_capital_pair = newQuestion();
@@ -47,7 +54,7 @@ $.ajax(
       $("#pr2__submit").on("click", () => {
         checkAnswer(current_country_capital_pair);
       });
-      $("#pr2__answer").keydown(function(event) {
+      $("#pr2__answer").keydown(function (event) {
         if (event.keyCode === 13) {
           $("#pr2__submit").click();
           $("#pr2__answer").autocomplete("close");
@@ -57,7 +64,7 @@ $.ajax(
       // Autocomplete 에서 enter 혹은 눌렀을 때, 위와 동일
       $("#pr2__answer").autocomplete({
         source: capitals,
-        select: function(event, ui) {
+        select: function (event, ui) {
           // enter 는 위의 keyup 으로, click 은 pr2__submit 으로 위임
           if (event.keyCode === 13) {
           } else {
@@ -66,13 +73,13 @@ $.ajax(
             $("#pr2__submit").click();
           }
         },
-        close: function(event, ui) {
+        close: function (event, ui) {
           $("#pr2__answer").val("");
         }
       });
 
       // filtering with radio
-      $("input[type=radio][name=filter]").change(function() {
+      $("input[type=radio][name=filter]").change(function () {
         const filtering = this.value;
         switch (filtering) {
           case "all":
@@ -98,7 +105,7 @@ $.ajax(
       function newQuestion() {
         // 임의의 국가를 불러온다.
         const country_capital_pair =
-          pairs[Math.floor(Math.random() * pairs.length)];
+          window.pairs[Math.floor(Math.random() * window.pairs.length)];
         $("#pr2__question").html(country_capital_pair.country);
 
         // input 에 자동으로 cursor blinking.
@@ -170,11 +177,11 @@ $.ajax(
     });
 
     // on Button Press => ajax 로 안에 넣을 수 없다.
-    $(document).on("click", ".delete", function() {
+    $(document).on("click", ".delete", function () {
       // alert("in the delete!");
       this.closest("tr").remove();
     });
   })
   .fail(error => {
-    alert("");
+    alert("Could not retrieve country-capital pairs file!");
   });
