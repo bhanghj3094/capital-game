@@ -14,7 +14,7 @@ h1 {
 }
 
 table {
-  width: 400px;
+  min-width: 400px;
   margin-top: 10px;
   border-collapse: collapse;
   /* font-family: 'Noto Sans', sans-serif; */

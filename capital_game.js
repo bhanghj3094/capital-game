@@ -49,13 +49,11 @@ $.get(
     $(document).ready(() => {
       /* Bring entries, and load new question. */
       initializeEntries();
-      let current_country_capital_pair = newQuestion();
+      let current_pair = newQuestion();
 
       /* On button click or 'enter' */
       $("#pr2__submit").on("click", () => {
-        current_country_capital_pair = checkAnswer(
-          current_country_capital_pair,
-        );
+        current_pair = checkAnswer(current_pair);
       });
       $("#pr2__answer").keydown(event => {
         if (event.keyCode === 13) {
@@ -101,6 +99,38 @@ $.get(
             $("tr.wrong").show();
         }
       });
+
+      /* Hovering on past entries. */
+      $(document).on(
+        {
+          mouseenter: event => {
+            setTimeout(() => {
+              $("iframe").attr("style", "border: 1px solid black");
+              setMapLocation(event.currentTarget.innerHTML);
+            }, 1000);
+          },
+          mouseleave: () => {
+            $("iframe").attr("style", "border: 0");
+            setMapLocation(current_pair.country);
+          },
+        },
+        ".country",
+      );
+      $(document).on(
+        {
+          mouseenter: event => {
+            setTimeout(() => {
+              $("iframe").attr("style", "border: 1px solid black");
+              setMapLocation(event.currentTarget.innerText.split("\n")[0], 5);
+            }, 1000);
+          },
+          mouseleave: () => {
+            $("iframe").attr("style", "border: 0");
+            setMapLocation(current_pair.country);
+          },
+        },
+        ".capital",
+      );
     });
   })
   .fail(error => {
@@ -111,7 +141,7 @@ $.get(
 /* ======================== Functions ======================== */
 /**
  * newQuestion: clear input, show new question.
- * @return {json} country-capital pair.
+ * @return {JSON} country-capital pair.
  */
 function newQuestion() {
   const country_capital_pair =
@@ -121,23 +151,18 @@ function newQuestion() {
   $("#pr2__question").html(country);
   $("#pr2__answer").val("").focus();
 
-  const iframe = $("iframe");
-  let src = iframe.attr("src");
-
-  /* Slice src from location query, and insert new. */
-  src = src.slice(0, src.indexOf("&q="));
-  iframe.attr("src", src + `&q=${country.split(" ").join("+")}`);
+  setMapLocation(country);
   return country_capital_pair;
 }
 
 /**
  * checkAnswer: check the input answer and insert to the list below.
- * @param {json} current_country_capital_pair
- * @return {json} new country-capital pair.
+ * @param {JSON} current_pair
+ * @return {JSON} new country-capital pair.
  */
-function checkAnswer(current_country_capital_pair) {
-  const country = current_country_capital_pair.country;
-  const capital = current_country_capital_pair.capital;
+function checkAnswer(current_pair) {
+  const country = current_pair.country;
+  const capital = current_pair.capital;
   const myAnswer = $("#pr2__answer").val();
 
   /* Check answer. */
@@ -153,39 +178,32 @@ function checkAnswer(current_country_capital_pair) {
     $("tr").show();
   }
   /* Push to entries, and insert HTML. */
-  pushEntry({
-    correct,
-    country,
-    capital: correct ? capital : myAnswer,
-  });
+  pushEntry({ correct, country, capital, myAnswer });
 
   /* Reset with new question. */
   return newQuestion();
 }
 
+/* ========================= Entries ========================= */
 /**
  * pushEntry: push current entry.
- * @param {Boolean} correct
- * @param {String} country
- * @param {String} capital If correct, capital. Otherwise, myAnswer.
+ * @param {JSON} entry
  */
-function pushEntry({ correct, country, capital }) {
-  pushEntryHTML({ correct, country, capital });
-
-  /* Update entries, and database. */
-  entries.push({
-    correct: correct,
-    country: country,
-    capital: capital,
-  });
+function pushEntry(entry) {
+  /* Insert HTML, update entries, and database. */
+  pushEntryHTML(entry);
+  entries.push(entry);
   writeToDatabase(entries);
 }
 
 /**
  * pushEntryHTML: insert HTML Elements.
- * @params equal to above.
+ * @param {Boolean} correct
+ * @param {String} country
+ * @param {String} capital
+ * @param {String} myAnswer
  */
-function pushEntryHTML({ correct, country, capital }) {
+function pushEntryHTML({ correct, country, capital, myAnswer }) {
   const correctToString = correct ? "correct" : "wrong";
 
   /* Insert HTML Element. */
@@ -196,10 +214,10 @@ function pushEntryHTML({ correct, country, capital }) {
         correct
           ? `<td class="capital">${capital}</td>`
           : `<td id="wrong" class="capital">
-            <strike>${capital}</strike>
+            <strike>${myAnswer}</strike>
           </td>`
       }
-      <td id="delete_button"> 
+      <td id="delete_button" class="capital"> 
         ${capital}
         <button class="delete">delete</button>
       </td>
@@ -254,7 +272,23 @@ function clearEntries() {
   writeToDatabase(entries);
 }
 
-/* =========================================================== */
+/* =========================== Maps ========================== */
+/**
+ * setMapLocation: set location and zoom in Google Map
+ * @param {String} location
+ * @param {Integer} zoom
+ */
+function setMapLocation(location, zoom) {
+  location = `&q=${location.split(" ").join("+")}`;
+  zoom = zoom ? `&zoom=${zoom}` : "";
+  console.log({ location });
+
+  /* Slice src from location query, and insert new. */
+  const iframe = $("iframe");
+  let src = iframe.attr("src");
+  newSrc = src.slice(0, src.indexOf("&q=")) + location + zoom;
+  iframe.attr("src", newSrc);
+}
 
 /* ======================== Database ========================= */
 const databaseRef = firebase.database().ref("history");
