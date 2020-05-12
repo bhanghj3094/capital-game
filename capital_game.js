@@ -11,12 +11,12 @@ $.ajax(
      * The result is stored in windows.pairs variable.
      */
     window.pairs = [];
-    const data = response.split("\n").slice(1);
+    const data = response.split("\r\n").slice(1);
     for (let i = 0; i < data.length; i++) {
       const country = data[i].split(",")[0];
       const capital = data[i].split(",")[1];
 
-      pairs.push({
+      window.pairs.push({
         country: country
           .split(" ")
           .map(item => {
@@ -127,8 +127,7 @@ $.ajax(
         const myAnswer = $("#pr2__answer").val();
 
         // check if correct
-        const correct =
-          myAnswer.toLowerCase() === capital.toLowerCase() ? true : false;
+        const correct = myAnswer.toLowerCase() === capital.toLowerCase();
         if (correct) {
           // change to "All", if the filter was wrong
           if (
@@ -140,14 +139,16 @@ $.ajax(
             $("tr").show();
           }
           // alert("Correct Answer!");
-          $("tr#filter").after(`<tr class="correct">
-          <td>${country}</td>
-          <td>${capital}</td>
-          <td id="delete_button">
-            <i class="fas fa-check"></i>
-            <button class="delete">delete</button>
-          </td>
-        </tr>`);
+          $("tr#filter").after(
+            `<tr class="correct">
+              <td>${country}</td>
+              <td>${capital}</td>
+              <td id="delete_button">
+                <i class="fas fa-check"></i>
+                <button class="delete">delete</button>
+              </td>
+            </tr>`
+          );
         } else {
           // change to "All", if the filter was correct
           if (
@@ -159,14 +160,16 @@ $.ajax(
             $("tr").show();
           }
           // alert("Wrong Answer!");
-          $("tr#filter").after(`<tr class="wrong">
-          <td>${country}</td>
-          <td id="wrong"><strike>${myAnswer}</strike></td>
-          <td id="delete_button">
-            ${capital}
-            <button class="delete">delete</button>
-          </td>
-        </tr>`);
+          $("tr#filter").after(
+            `<tr class="wrong">
+              <td>${country}</td>
+              <td id="wrong"><strike>${myAnswer}</strike></td>
+              <td id="delete_button">
+                ${capital}
+                <button class="delete">delete</button>
+              </td>
+            </tr>`
+          );
         }
 
         // reset with a new question
@@ -184,4 +187,5 @@ $.ajax(
   })
   .fail(error => {
     alert("Could not retrieve country-capital pairs file!");
+    console.error({ error });
   });
