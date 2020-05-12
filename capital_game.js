@@ -85,8 +85,8 @@ $.get(
       $("#pr3__clear").on("click", () => clearEntries());
 
       /* Filtering with radio. */
-      $("input[type=radio][name=filter]").change(() => {
-        const filtering = this.value;
+      $("input[type=radio][name=filter]").change(e => {
+        const filtering = e.target.value;
         switch (filtering) {
           case "all":
             $("tr").show();
@@ -116,9 +116,17 @@ $.get(
 function newQuestion() {
   const country_capital_pair =
     window.pairs[Math.floor(Math.random() * window.pairs.length)];
+  const country = country_capital_pair.country;
 
-  $("#pr2__question").html(country_capital_pair.country);
+  $("#pr2__question").html(country);
   $("#pr2__answer").val("").focus();
+
+  const iframe = $("iframe");
+  let src = iframe.attr("src");
+
+  /* Slice src from location query, and insert new. */
+  src = src.slice(0, src.indexOf("&q="));
+  iframe.attr("src", src + `&q=${country.split(" ").join("+")}`);
   return country_capital_pair;
 }
 
