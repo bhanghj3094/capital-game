@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
   <head>
     <meta charset="UTF-8">
     <link rel="icon" href="favicon-emoji-astonished.ico">
@@ -10,10 +11,9 @@
     <link href="jquery/css/ui-lightness/jquery-ui-1.10.0.custom.css" rel="stylesheet" />
     <link href="./capital_game.css" rel="stylesheet" />
   </head>
+
   <body>
-    <h1>
-      Do you know the capital of this country?
-    </h1>
+    <h1> Do you know the capital of this country? </h1>
     <div>
       <table cellpadding="3">
         <tr id="tableHeader">
@@ -32,9 +32,12 @@
         </tr>
         <tr id="filter">
           <td colspan="3">
-            <input type="radio" name="filter" value="all" checked="checked">All</input>
-            <input type="radio" name="filter" value="correct">Correct Only</input>
-            <input type="radio" name="filter" value="wrong">Wrong Only</input>
+            <div>
+              <input type="radio" name="filter" value="all" checked="checked">All</input>
+              <input type="radio" name="filter" value="correct">Correct Only</input>
+              <input type="radio" name="filter" value="wrong">Wrong Only</input>
+            </div>
+            <button id="pr3__clear">Clear</button>
           </td>
         </tr>
       </table>
@@ -42,6 +45,25 @@
     <!--Your HTML here-->
     <script src="jquery/js/jquery-1.9.0.min.js"></script>
     <script src="jquery/js/jquery-ui-1.10.0.custom.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.3/firebase.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.3/firebase-analytics.js"></script>
+    <script>
+      // Your web app's Firebase configuration
+      var firebaseConfig = {
+        apiKey: "AIzaSyCgMJfdM3uaazNb974sRrcm6hF1RZUPMp8",
+        authDomain: "cs374-capital-game.firebaseapp.com",
+        databaseURL: "https://cs374-capital-game.firebaseio.com",
+        projectId: "cs374-capital-game",
+        storageBucket: "cs374-capital-game.appspot.com",
+        messagingSenderId: "195806344799",
+        appId: "1:195806344799:web:8b5ffaabf367b1bd5f8dea",
+        measurementId: "G-RK1PQNB92N",
+      };
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      firebase.analytics();
+    </script>
     <script src="./capital_game.js"></script>
   </body>
+
 </html>

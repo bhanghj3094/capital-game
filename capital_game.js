@@ -1,6 +1,8 @@
 // This allows the Javascript code inside this block to only run when the page
 // has finished loading in the browser.
-// '$' is for jQuery library.
+
+/* Array for table entries. */
+const entries = [];
 
 /* jQuery ajax call */
 $.get(
@@ -43,8 +45,10 @@ $.get(
       capitals.push(window.pairs[i].capital);
     }
 
-    /* On document loaded. */
+    /* On document load. */
     $(document).ready(() => {
+      /* Bring entries, and load new question. */
+      initializeEntries();
       let current_country_capital_pair = newQuestion();
 
       /* On button click or 'enter' */
@@ -60,7 +64,7 @@ $.get(
         }
       });
 
-      /* In autocomplete, same as above. */
+      /* Handle autocomplete click, same as above. */
       $("#pr2__answer").autocomplete({
         source: capitals,
         select: (event, ui) => {
@@ -71,8 +75,14 @@ $.get(
             $("#pr2__submit").click();
           }
         },
-        close: (event, ui) => $("#pr2__answer").val(""),
+        close: () => $("#pr2__answer").val(""),
       });
+
+      /* Delete entry. */
+      $(document).on("click", ".delete", event => deleteEntry(event.target));
+
+      /* Clear entries. */
+      $("#pr3__clear").on("click", () => clearEntries());
 
       /* Filtering with radio. */
       $("input[type=radio][name=filter]").change(() => {
@@ -92,9 +102,6 @@ $.get(
         }
       });
     });
-
-    /* Delete entry. */
-    $(document).on("click", ".delete", () => this.closest("tr").remove());
   })
   .fail(error => {
     alert("Could not retrieve country-capital pairs file!");
@@ -104,7 +111,7 @@ $.get(
 /* ======================== Functions ======================== */
 /**
  * newQuestion: clear input, show new question.
- * @return (json) country-capital pair.
+ * @return {json} country-capital pair.
  */
 function newQuestion() {
   const country_capital_pair =
@@ -115,10 +122,10 @@ function newQuestion() {
   return country_capital_pair;
 }
 
-/*
+/**
  * checkAnswer: check the input answer and insert to the list below.
- * @param (json) country-capital pair.
- * @return (json) new country-capital pair.
+ * @param {json} current_country_capital_pair
+ * @return {json} new country-capital pair.
  */
 function checkAnswer(current_country_capital_pair) {
   const country = current_country_capital_pair.country;
@@ -137,26 +144,136 @@ function checkAnswer(current_country_capital_pair) {
     $("input[value=all]").prop("checked", true);
     $("tr").show();
   }
-  /* Insert */
-  $("tr#filter").after(
-    `<tr class=${correctToString}>
-      <td>${country}</td>
-      ${
-        correct
-          ? `<td>${capital}</td>`
-          : `<td id="wrong">
-            <strike>${myAnswer}</strike>
-          </td>`
-      }
-      <td id="delete_button">
-        ${capital}
-        <button class="delete">delete</button>
-      </td>
-    </tr>`,
-  );
+  /* Push to entries, and insert HTML. */
+  pushEntry({
+    correct,
+    country,
+    capital: correct ? capital : myAnswer,
+  });
 
   /* Reset with new question. */
   return newQuestion();
 }
 
+/**
+ * pushEntry: push current entry.
+ * @param {Boolean} correct
+ * @param {String} country
+ * @param {String} capital If correct, capital. Otherwise, myAnswer.
+ */
+function pushEntry({ correct, country, capital }) {
+  pushEntryHTML({ correct, country, capital });
+
+  /* Update entries, and database. */
+  entries.push({
+    correct: correct,
+    country: country,
+    capital: capital,
+  });
+  writeToDatabase(entries);
+}
+
+/**
+ * pushEntryHTML: insert HTML Elements.
+ * @params equal to above.
+ */
+function pushEntryHTML({ correct, country, capital }) {
+  const correctToString = correct ? "correct" : "wrong";
+
+  /* Insert HTML Element. */
+  $("tr#filter").after(
+    `<tr class="entry ${correctToString}">
+      <td class="country">${country}</td>
+      ${
+        correct
+          ? `<td class="capital">${capital}</td>`
+          : `<td id="wrong" class="capital">
+            <strike>${capital}</strike>
+          </td>`
+      }
+      <td id="delete_button"> 
+        ${capital}
+        <button class="delete">delete</button>
+      </td>
+    </tr>`,
+  );
+}
+
+/**
+ * deleteEntry: delete current entry.
+ * @param {HTMLElement} target delete button
+ */
+function deleteEntry(target) {
+  const entryElement = target.parentElement.parentElement;
+  const index = entries.length - 1 - (entryElement.rowIndex - 3);
+
+  /* Remove HTML Element. */
+  entryElement.remove();
+
+  /* Update entries, and database. */
+  entries.splice(index, 1);
+  writeToDatabase(entries);
+}
+
+/**
+ * initializeEntries: initialize entries with database.
+ */
+function initializeEntries() {
+  const promise = readFromDatabase();
+  promise
+    .then(res => {
+      const history = res.val();
+      for (key in history) {
+        const hasEntries = history[key].entries;
+        if (hasEntries) {
+          entries.splice(0, entries.length, ...hasEntries);
+          entries.forEach(entry => pushEntryHTML(entry));
+        }
+      }
+    })
+    .catch(err => console.error(err));
+}
+
+/**
+ * clearEntries: clear all entries.
+ */
+function clearEntries() {
+  /* Remove HTML Elements. */
+  $(".entry").remove();
+
+  /* Update entries, and database. */
+  entries.splice(0, entries.length);
+  writeToDatabase(entries);
+}
+
+/* =========================================================== */
+
+/* ======================== Database ========================= */
+const databaseRef = firebase.database().ref("history");
+// Refer to https://firebase.google.com/docs/reference/js/firebase.database.Reference
+
+/**
+ * readFromDatabase: get pairs from database.
+ * @return {Promise} snapshot of most recent database.
+ */
+function readFromDatabase() {
+  databaseRef.orderByChild("timestamp");
+  return databaseRef.limitToLast(1).once("value");
+}
+
+/**
+ * writeToDatabase: push timestamp with pairs to database.
+ * @param {Array} entries list of country-capital pair.
+ */
+function writeToDatabase(entries) {
+  const newKey = databaseRef.push();
+  const entriesObject = {};
+  entries.forEach((entry, index) => {
+    entriesObject[index] = entry;
+  });
+  newKey.set({
+    timestamp: firebase.database.ServerValue.TIMESTAMP,
+    entries: entriesObject,
+  });
+}
 /* =========================================================== */
