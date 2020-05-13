@@ -79,8 +79,14 @@ $.get(
       /* Delete entry. */
       $(document).on("click", ".delete", event => deleteEntry(event.target));
 
+      /* Undo action. */
+      $("#pr3__undo").on("click", () => undo());
+
       /* Clear entries. */
       $("#pr3__clear").on("click", () => clearEntries());
+
+      /* Reset. */
+      $("#pr3__reset").on("click", () => reset());
 
       /* Filtering with radio. */
       $("input[type=radio][name=filter]").change(e => {
@@ -194,6 +200,10 @@ function pushEntry(entry) {
   pushEntryHTML(entry);
   entries.push(entry);
   writeToDatabase(entries);
+
+  /* Enable undo, clear. */
+  $("#pr3__undo")[0].disabled = false;
+  $("#pr3__clear")[0].disabled = false;
 }
 
 /**
@@ -239,25 +249,82 @@ function deleteEntry(target) {
   /* Update entries, and database. */
   entries.splice(index, 1);
   writeToDatabase(entries);
+
+  /* Disable clear if nothing left. */
+  if (entries.length === 0) {
+    $("#pr3__clear")[0].disabled = true;
+  }
 }
 
 /**
- * initializeEntries: initialize entries with database.
+ * initializeEntries: initialize entries with global history.
  */
 function initializeEntries() {
   const promise = readFromDatabase();
   promise
     .then(res => {
       const history = res.val();
+      if (!history) {
+        $("#pr3__undo")[0].disabled = true;
+        $("#pr3__clear")[0].disabled = true;
+      }
       for (key in history) {
         const hasEntries = history[key].entries;
         if (hasEntries) {
           entries.splice(0, entries.length, ...hasEntries);
           entries.forEach(entry => pushEntryHTML(entry));
+          $("#pr3__clear")[0].disabled = false;
+        } else {
+          $("#pr3__clear")[0].disabled = true;
         }
       }
     })
     .catch(err => console.error(err));
+}
+
+/**
+ * undo: undo any last action including 'clear', 'delete'.
+ */
+function undo() {
+  /* 1. Delete latest history. */
+  const promise = readFromDatabase();
+  promise
+    .then(res => {
+      const history = res.val();
+      if (!history) {
+        $("#pr3__undo")[0].disabled = true;
+        $("#pr3__clear")[0].disabled = true;
+      }
+      for (key in history) {
+        databaseRef
+          .child(key)
+          .remove()
+          .then(() => {
+            /* 2. Clear entires HTML. */
+            $(".entry").remove();
+            /* 3. Initialize Entries. */
+            initializeEntries();
+          })
+          .catch(err => console.error(err));
+      }
+    })
+    .catch(err => console.error(err));
+}
+
+/**
+ * reset: reset all histories and entries.
+ */
+function reset() {
+  /* 1. Clear entries */
+  $(".entry").remove();
+
+  /* 2. Clear history */
+  entries.splice(0, entries.length);
+  databaseRef.remove();
+
+  /* 3. Update buttons */
+  $("#pr3__undo")[0].disabled = true;
+  $("#pr3__clear")[0].disabled = true;
 }
 
 /**
@@ -270,6 +337,8 @@ function clearEntries() {
   /* Update entries, and database. */
   entries.splice(0, entries.length);
   writeToDatabase(entries);
+
+  $("#pr3__clear")[0].disabled = true;
 }
 
 /* =========================== Maps ========================== */
@@ -281,7 +350,6 @@ function clearEntries() {
 function setMapLocation(location, zoom) {
   location = `&q=${location.split(" ").join("+")}`;
   zoom = zoom ? `&zoom=${zoom}` : "";
-  console.log({ location });
 
   /* Slice src from location query, and insert new. */
   const iframe = $("iframe");
